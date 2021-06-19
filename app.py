@@ -29,7 +29,7 @@ class Item(Resource):
     
     def delete(self, name):
         global items
-        item = list(filter(lambda x: x['name'] !=name, items))
+        items = list(filter(lambda x: x['name'] !=name, items))
         return {"message": "Item deleted"}
 
 class ItemList(Resource):
