@@ -1,5 +1,6 @@
 import psycopg2
 import psycopg2.extras
+from flask_restful import Resource, reqparse
 host = "localhost"
 dbname = "flask_api"
 dbuser= "sq"
@@ -51,13 +52,34 @@ class User:
             user = None
         db.close()
         return user
-    # def db_init(self):
-    #     try:
-    #         db = psycopg2.connect(database=dbname,user=user, password=password, host=host, port="5432")
-    #     except:
-    #         print("error message")
-    #     #cursor_factory=
-    #     else:
-    #         #DictCursor不返回Dict, RealDict才返回 
-    #         cursor = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    #     return db, cursor
+
+class UserRegister(Resource):
+
+    parser = reqparse.RequestParser()
+
+    parser.add_argument(
+        'username',
+        type=str,
+        required=True,
+        help="This field cannot be blank.")
+
+    parser.add_argument(
+        'password',
+        type=str,
+        required=True,
+        help="This field cannot be blank.")
+
+    def post(self):
+        data = UserRegister.parser.parse_args()
+        username = data['username']
+        password = data['password']
+
+        db = psycopg2.connect(database=dbname,user=dbuser, password=dbpwd, host=host, port="5432")
+        cursor = db.cursor()
+
+        sql = f"INSERT INTO users(id, username, password) VALUES (NULL, '{username}','{password}')"
+        cursor.execute(sql)
+        
+        db.commit()
+        db.close()
+        return {"message":"User created successfully."}, 201
