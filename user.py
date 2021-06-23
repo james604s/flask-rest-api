@@ -74,6 +74,9 @@ class UserRegister(Resource):
         username = data['username']
         password = data['password']
 
+        if User.find_by_username(username):
+            return {"message": "A user with that username already exists"}, 400
+
         db = psycopg2.connect(database=dbname,user=dbuser, password=dbpwd, host=host, port="5432")
         cursor = db.cursor()
 
