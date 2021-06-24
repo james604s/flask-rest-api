@@ -79,12 +79,32 @@ class Item(Resource):
     
     def put(self, name):
         data = Item.parser.parse_args()
-        item = next(filter(lambda x: x['name'] == name, items), None)
+        # item = next(filter(lambda x: x['name'] == name, items), None)
+        item = self.find_by_name(name)
+        updated_item = {"name": name, "price":data["price"]}
         if item is None:
-            item = {"name": name, "price":data["price"]}
-            items.append(item)
-        item.update(data)
-        return item
+            try:
+                self.insert(updated_item)
+            except:
+                return {"message":"An error occurred inserting the item"}, 500
+        else:
+            try:
+                self.update(updated_item)
+            except:
+                return {"message":"An error occurred updating the item"}, 500
+        return updated_item
+
+    @classmethod
+    def update(cls, item):
+        db = psycopg2.connect(database=dbname,user=dbuser, password=dbpwd, host=host, port="5432")
+        cursor = db.cursor()
+        
+        q = f"UPDATE items SET price={item['price']} WHERE name='{item['name']}'"
+        cursor.execute(q)
+
+        db.commit()
+        db.close()
+
 class ItemList(Resource):
     def get(self):
         return {"items": items}
