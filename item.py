@@ -107,4 +107,13 @@ class Item(Resource):
 
 class ItemList(Resource):
     def get(self):
+        db = psycopg2.connect(database=dbname,user=dbuser, password=dbpwd, host=host, port="5432")
+        cursor = db.cursor()
+        
+        q = "SELECT * FROM items"
+        result = cursor.execute(q)
+        
+        items = [{'name':row[1], 'price':row[2]} for row in result]
+        # db.commit()
+        db.close()
         return {"items": items}
