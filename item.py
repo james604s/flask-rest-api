@@ -57,8 +57,16 @@ class Item(Resource):
         return item, 201
     
     def delete(self, name):
-        global items
-        items = list(filter(lambda x: x['name'] !=name, items))
+        db = psycopg2.connect(database=dbname,user=dbuser, password=dbpwd, host=host, port="5432")
+        cursor = db.cursor()
+        
+        q = f"DELETE FROM items WHERE name='{name}')"
+        cursor.execute(q)
+
+        db.commit()
+        db.close()
+        # global items
+        # items = list(filter(lambda x: x['name'] !=name, items))
         return {"message": "Item deleted"}
     
     def put(self, name):
