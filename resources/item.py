@@ -1,6 +1,7 @@
 import psycopg2
 from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required
+from models.item import ItemModel
 
 host = "localhost"
 dbname = "flask_api"
@@ -18,51 +19,28 @@ class Item(Resource):
 
     @jwt_required()
     def get(self, name):
-        item = self.find_by_name(name)
+        item = ItemModel.find_by_name(name)
         if item:
-            return item
+            return item.json()
         return {"message": "Item not found."}, 404
         # item = list(filter(lambda x: x['name'] ==name, items))
         # item = next(filter(lambda x: x['name'] ==name, items), None)
         # return {"item":None}, 200 if item else 404
-    @classmethod
-    def find_by_name(cls, name):
-        db = psycopg2.connect(database=dbname,user=dbuser, password=dbpwd, host=host, port="5432")
-        cursor = db.cursor()
-
-        query = f"SELECT * FROM items WHERE name='{name}'"
-        cursor.execute(query)
-        row = cursor.fetchone()
-        db.close()
-        if row:
-            return {"item":{"name": row[1], "price": row[2]}}
-        # return {"message": "Item not found."}, 404
 
     def post(self, name):
-        if self.find_by_name(name):
+        if ItemModel.find_by_name(name):
             return {"message":f"An item with name '{name}' already exists."}, 400
         # if next(filter(lambda x: x['name'] ==name, items), None) is not None:
         #     return {"message":f"An item with name '{name}' already exists."}, 400
         data = Item.parser.parse_args()
         
-        item = {"name":name, "price":data['price']}
+        item = ItemModel(name, data['price'])
         try:
-            self.insert(item)
+            item.insert()
         except:
             return {"message":"An error occured inserting the item."}, 500
 
-        return item, 201
-    
-    @classmethod
-    def insert(cls, item):
-        db = psycopg2.connect(database=dbname,user=dbuser, password=dbpwd, host=host, port="5432")
-        cursor = db.cursor()
-        
-        q = f"INSERT INTO items VALUES ('{item['name']}',{item['price']})"
-        cursor.execute(q)
-
-        db.commit()
-        db.close()
+        return item.json(), 201
 
     def delete(self, name):
         db = psycopg2.connect(database=dbname,user=dbuser, password=dbpwd, host=host, port="5432")
@@ -80,31 +58,19 @@ class Item(Resource):
     def put(self, name):
         data = Item.parser.parse_args()
         # item = next(filter(lambda x: x['name'] == name, items), None)
-        item = self.find_by_name(name)
-        updated_item = {"name": name, "price":data["price"]}
+        item = ItemModel.find_by_name(name)
+        updated_item = ItemModel(name, data["price"])
         if item is None:
             try:
-                self.insert(updated_item)
+                updated_item.insert()
             except:
                 return {"message":"An error occurred inserting the item"}, 500
         else:
             try:
-                self.update(updated_item)
+                updated_item.update()
             except:
                 return {"message":"An error occurred updating the item"}, 500
-        return updated_item
-
-    @classmethod
-    def update(cls, item):
-        db = psycopg2.connect(database=dbname,user=dbuser, password=dbpwd, host=host, port="5432")
-        cursor = db.cursor()
-        
-        q = f"UPDATE items SET price={item['price']} WHERE name='{item['name']}'"
-        cursor.execute(q)
-
-        db.commit()
-        db.close()
-
+        return updated_item.json()
 class ItemList(Resource):
     def get(self):
         db = psycopg2.connect(database=dbname,user=dbuser, password=dbpwd, host=host, port="5432")
