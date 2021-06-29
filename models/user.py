@@ -1,54 +1,25 @@
-import psycopg2
-import psycopg2.extras
-host = "localhost"
-dbname = "flask_api"
-dbuser= "sq"
-dbpwd = "1234"
-sslmode = "require"
+from db import db
 
-class UserModel:
-    def __init__(self, _id, username, password):
-        self.id = _id
+
+class UserModel(db.Model):
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80))
+    password = db.Column(db.String(80))
+
+    def __init__(self, username, password):
         self.username = username
         self.password = password
 
-    def db_init(self):
-        try:
-            db = psycopg2.connect(database=dbname,user=dbuser, password=dbpwd, host=host, port="5432")
-        except:
-            print("error message")
-        #cursor_factory=
-        else:
-            #DictCursor不返回Dict, RealDict才返回 
-            cursor = db.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        return db, cursor
+    def save_to_db(self):
+        db.session.add(self)
+        db.session.commit()
 
     @classmethod
     def find_by_username(cls, username):
-        db = psycopg2.connect(database=dbname,user=dbuser, password=dbpwd, host=host, port="5432")
-        cursor = db.cursor()
-        sql = f"SELECT * FROM users WHERE username='{username}';"
-        cursor.execute(sql)
-        db.commit()
-        row = cursor.fetchone()
-        if row:
-            user = cls(*row)
-        else:
-            user = None
-        db.close()
-        return user
+        return cls.query.filter_by(username=username).first()
 
     @classmethod
     def find_by_id(cls, _id):
-        db = psycopg2.connect(database=dbname,user=dbuser, password=dbpwd, host=host, port="5432")
-        cursor = db.cursor()
-        sql = f"SELECT * FROM users WHERE id='{_id}';"
-        cursor.execute(sql)
-        db.commit()
-        row = cursor.fetchone()
-        if row:
-            user = cls(*row)
-        else:
-            user = None
-        db.close()
-        return user
+        return cls.query.filter_by(id=_id).first()
